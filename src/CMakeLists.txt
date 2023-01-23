@@ -70,14 +70,14 @@ endif()
 
 macro(load name text)
   file(READ ${name} ${text})
-  set(${text}0 ${${text}})
+  set(${text}_ ${${text}})
 endmacro()
 macro(save name text)
-  if(NOT ${text} STREQUAL ${text}0)
+  if(NOT ${text} STREQUAL ${text}_)
     message(STATUS "write ${name}")
     file(WRITE ${name} "${${text}}")
   endif()
-  set(${text}0)
+  set(${text}_)
   set(${text})
 endmacro()
 
@@ -248,29 +248,33 @@ add_executable(luac ${LUAC_C})
 lua_library_link(lualib liblua)
 target_link_libraries(lua PRIVATE liblua)
 target_link_libraries(luac PRIVATE lualib)
-if(UNIX)
-  option(LUA_READLINE "Enable/Disable readline" 1)
+if(WIN32)
+  set_property(TARGET liblua PROPERTY PREFIX "")
+  set_property(TARGET lualib PROPERTY PREFIX lib)
+  set(suffix ${PROJECT_VERSION_MAJOR}${PROJECT_VERSION_MINOR})
 else()
-  option(LUA_READLINE "Enable/Disable readline" 0)
+  set(suffix ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+  set_target_properties(luac lua PROPERTIES SUFFIX ${suffix})
 endif()
-set(shared lua${PROJECT_VERSION_MAJOR}${PROJECT_VERSION_MINOR})
-set(static lua${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
-set_property(TARGET lualib liblua PROPERTY OUTPUT_NAME ${static})
-if(LUA_READLINE AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/FindReadline.cmake)
-  include(FindReadline.cmake)
-endif()
-set_property(TARGET lua luac PROPERTY INTERPROCEDURAL_OPTIMIZATION ${LUA_LTO})
-if(LUA_READLINE AND Readline_FOUND)
-  target_link_libraries(lua PRIVATE Readline::readline)
-  set_property(SOURCE ${LUA_C} APPEND PROPERTY COMPILE_DEFINITIONS LUA_USE_READLINE)
-endif()
+set_property(TARGET lualib liblua PROPERTY OUTPUT_NAME lua${suffix})
+set_property(TARGET luac lua PROPERTY INTERPROCEDURAL_OPTIMIZATION ${LUA_LTO})
 set_property(TARGET luaobj luac lua APPEND PROPERTY COMPILE_DEFINITIONS ${LUA_PRIVATE})
 if(WIN32)
   set_property(TARGET liblua APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS LUA_BUILD_AS_DLL)
   set_property(TARGET luaobj APPEND PROPERTY COMPILE_DEFINITIONS LUA_BUILD_AS_DLL)
-  set_target_properties(liblua PROPERTIES PREFIX "" OUTPUT_NAME ${shared})
+endif()
+
+if(CMAKE_STATIC_LIBRARY_SUFFIX STREQUAL .lib)
+  option(LUA_READLINE "Enable/Disable readline" 0)
 else()
-  set_target_properties(lua luac PROPERTIES VERSION ${LUA_VERSION})
+  option(LUA_READLINE "Enable/Disable readline" 1)
+endif()
+if(LUA_READLINE AND EXISTS ${CMAKE_CURRENT_LIST_DIR}/FindReadline.cmake)
+  include(FindReadline.cmake)
+endif()
+if(LUA_READLINE AND Readline_FOUND)
+  target_link_libraries(lua PRIVATE Readline::readline)
+  set_property(SOURCE ${LUA_C} APPEND PROPERTY COMPILE_DEFINITIONS LUA_USE_READLINE)
 endif()
 
 include(GNUInstallDirs)
@@ -297,20 +301,22 @@ get_property(prop TARGET liblua PROPERTY INTERFACE_LINK_LIBRARIES)
 string(REGEX REPLACE "\\$<BUILD_INTERFACE:[^>]*>" "" prop "${prop}")
 string(REPLACE "INSTALL_INTERFACE" "BUILD_INTERFACE" prop "${prop}")
 string(REPLACE "-l$<JOIN:, -l>" "" PC_LDFLAGS "-l$<JOIN:${prop}, -l>")
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${static}.pc CONTENT
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/lua${LUA_VERSION}.pc CONTENT
 "prefix=${CMAKE_INSTALL_PREFIX}
 exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
+libdir=\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}
 includedir=\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}\n
+INSTALL_LMOD=\${prefix}/${CMAKE_INSTALL_DATADIR}/lua/${LUA_VERSION}
+INSTALL_CMOD=\${prefix}/${CMAKE_INSTALL_LIBDIR}/lua/${LUA_VERSION}\n
 Name: ${PROJECT_NAME}
 Description: ${PROJECT_DESCRIPTION}
 Version: ${PROJECT_VERSION}
 URL: ${PROJECT_HOMEPAGE_URL}
 Cflags: -I\${includedir} ${PC_CFLAGS}
-Libs: -L\${libdir} -l${static}
+Libs: -L\${libdir} -llua${suffix}
 Libs.private: ${PC_LDFLAGS}
 ")
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${static}.pc
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lua${LUA_VERSION}.pc
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 install(FILES ${MAN1} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
