@@ -262,6 +262,11 @@ if(WIN32)
   set_property(TARGET luaobj APPEND PROPERTY COMPILE_DEFINITIONS LUA_BUILD_AS_DLL)
 endif()
 
+set(LUA_USER CACHE FILEPATH "lua extra source files")
+if(LUA_USER)
+  set_property(TARGET lua APPEND PROPERTY SOURCES ${LUA_USER})
+endif()
+
 if(CMAKE_STATIC_LIBRARY_SUFFIX STREQUAL .lib)
   option(LUA_READLINE "Enable/Disable readline" 0)
 else()
