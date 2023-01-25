@@ -1,7 +1,9 @@
 #include "isocline/src/isocline.c"
 #include "lua.h"
 
-static const char *get_suffix(const char *buffer, const char *sep) {
+#include <ctype.h>
+
+static const char *str_suffix(const char *buffer, const char *sep) {
     for (; *buffer; ++buffer) {
         if (strchr(sep, *buffer)) {
             return buffer;
@@ -10,22 +12,20 @@ static const char *get_suffix(const char *buffer, const char *sep) {
     return NULL;
 }
 
-#include <ctype.h>
-
-static void ic_completion_core(ic_completion_env_t *cenv, const char *buffer, const char *suffix, int sep) {
+static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const char *suffix, int sep) {
     lua_State *L = ic_completion_arg(cenv);
     if (suffix == NULL) {
         suffix = buffer;
     }
 
-    const char *result = get_suffix(suffix, ".:[");
+    const char *result = str_suffix(suffix, ".:[");
     if (result) {
         lua_pushlstring(L, suffix, result - suffix);
         lua_gettable(L, -2);
         suffix = result + 1;
         sep = *result;
         if (lua_istable(L, -1) && *suffix != '.' && *suffix != ':') {
-            ic_completion_core(cenv, buffer, suffix, sep);
+            completion_exec(cenv, buffer, suffix, sep);
         }
         lua_pop(L, 1);
         return;
@@ -89,29 +89,55 @@ static void ic_completion_core(ic_completion_env_t *cenv, const char *buffer, co
     prefix = (char *)alloc(ud, prefix, prefix_len + 1, 0);
 }
 
-static void ic_completion_fun(ic_completion_env_t *cenv, const char *buffer) {
+static void completion_fun(ic_completion_env_t *cenv, const char *buffer) {
     lua_State *L = ic_completion_arg(cenv);
 #if defined(LUA_RIDX_LAST)
     lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_LAST);
 #else /* !LUA_RIDX_LAST */
     lua_pushvalue(L, LUA_GLOBALSINDEX);
 #endif /* LUA_RIDX_LAST */
-    ic_completion_core(cenv, buffer, buffer, 0);
+    completion_exec(cenv, buffer, buffer, 0);
     lua_pop(L, 1);
 }
 
-static bool ic_char_is_block(const char *s, long len) {
+static bool char_is_block(const char *s, long len) {
     return len > 0 && (isalnum(*s) || strchr(".:[\'\"", *s));
 }
 
 static void completer(ic_completion_env_t *cenv, const char *buffer) {
-    ic_complete_word(cenv, buffer, ic_completion_fun, ic_char_is_block);
+    ic_complete_word(cenv, buffer, completion_fun, char_is_block);
     ic_complete_filename(cenv, buffer, 0, NULL, NULL);
 }
 
 static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) {
-    static const char *keywords[] = {"and", "false", "function", "in", "local", "nil", "not", "or", "true", NULL};
-    static const char *controls[] = {"break", "do", "else", "elseif", "end", "for", "goto", "if", "repeat", "return", "then", "until", "while", NULL};
+    static const char *keywords[] = {
+        "and",
+        "false",
+        "function",
+        "in",
+        "local",
+        "nil",
+        "not",
+        "or",
+        "true",
+        NULL,
+    };
+    static const char *controls[] = {
+        "break",
+        "do",
+        "else",
+        "elseif",
+        "end",
+        "for",
+        "goto",
+        "if",
+        "repeat",
+        "return",
+        "then",
+        "until",
+        "while",
+        NULL,
+    };
 
     lua_State *L = (lua_State *)arg;
 #if defined(LUA_RIDX_LAST)
