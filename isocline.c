@@ -101,19 +101,12 @@ static void ic_completion_fun(ic_completion_env_t *cenv, const char *buffer) {
 }
 
 static bool ic_char_is_block(const char *s, long len) {
-    if (len == 1) {
-        if (isalnum(*s) || *s == '_' || *s == '.' || *s == ':' || *s == '[') {
-            return true;
-        }
-    } else if (len > 1) {
-        if (s[1] == '\'' || s[1] == '\"')
-            return true;
-    }
-    return false;
+    return len > 0 && (isalnum(*s) || strchr(".:[\'\"", *s));
 }
 
 static void completer(ic_completion_env_t *cenv, const char *buffer) {
     ic_complete_word(cenv, buffer, ic_completion_fun, ic_char_is_block);
+    ic_complete_filename(cenv, buffer, 0, NULL, NULL);
 }
 
 static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) {
