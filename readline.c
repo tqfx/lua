@@ -1,7 +1,7 @@
-#include <readline/readline.h>
 #include "lua.h"
-
+#include <stdio.h>
 #include <ctype.h>
+#include <readline/readline.h>
 
 static const char *str_suffix(const char *buffer, const char *sep) {
     for (; *buffer; ++buffer) {
@@ -22,11 +22,10 @@ static int lua_readline(lua_State *L, int ret) {
 }
 
 static lua_State *rl_State = NULL;
-
-static void compentry_exec(const char *text, const char *suffix, int sep) {
+static void compentry_exec(const char *buffer, const char *suffix, int sep) {
     lua_State *L = rl_State;
     if (suffix == NULL) {
-        suffix = text;
+        suffix = buffer;
     }
 
     const char *result = str_suffix(suffix, ".:[");
@@ -37,7 +36,7 @@ static void compentry_exec(const char *text, const char *suffix, int sep) {
         sep = *result;
         char **ret = NULL;
         if (lua_istable(L, -1) && *suffix != '.' && *suffix != ':') {
-            compentry_exec(text, suffix, sep);
+            compentry_exec(buffer, suffix, sep);
         }
         lua_pop(L, 1);
         return;
@@ -45,9 +44,9 @@ static void compentry_exec(const char *text, const char *suffix, int sep) {
 
     void *ud;
     lua_Alloc alloc = lua_getallocf(L, &ud);
-    size_t prefix_len = suffix - text - (sep ? 1 : 0);
+    size_t prefix_len = suffix - buffer - (sep ? 1 : 0);
     char *prefix = (char *)alloc(ud, NULL, LUA_TSTRING, prefix_len + 1);
-    memcpy(prefix, text, prefix_len);
+    memcpy(prefix, buffer, prefix_len);
     prefix[prefix_len] = 0;
 
     size_t suffix_len = strlen(suffix);
@@ -128,6 +127,7 @@ char *compentry_func(const char *text, int state) {
 }
 
 char **completion_func(const char *text, int start, int end) {
+    rl_completion_suppress_append = 1;
     return rl_completion_matches(text, compentry_func);
 }
 
