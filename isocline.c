@@ -101,7 +101,7 @@ static void completion_fun(ic_completion_env_t *cenv, const char *buffer) {
 }
 
 static bool char_is_block(const char *s, long len) {
-    return len > 0 && (isalnum(*s) || strchr(".:[\'\"", *s));
+    return len > 0 && (isalnum(*s) || *s == '_' || *s == '.' || *s == ':' || *s == '[' || *s == '\'' || *s == '\"');
 }
 
 static void completer(ic_completion_env_t *cenv, const char *buffer) {
