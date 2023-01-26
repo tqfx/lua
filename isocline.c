@@ -118,7 +118,7 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
                     } else {
                         lua_pushfstring(L, "%s%s%s", prefix, lua_tostring(L, -1), key);
                     }
-                    lua_remove(L, -2); // key, value, sep, text
+                    lua_remove(L, -2); // key, value, sep, replacement
                 } else {
                     if (lua_type(L, -1) == LUA_TFUNCTION) {
                         lua_pushfstring(L, "%s%s(", prefix, key);
@@ -129,7 +129,7 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
                 ic_add_completion_ex(cenv, lua_tostring(L, -1), key, NULL);
                 lua_pop(L, 1);
             }
-        } else if (lua_type(L, -2) == LUA_TNUMBER && sep && *sep == '[') {
+        } else if (lua_type(L, -2) == LUA_TNUMBER) {
             lua_pushfstring(L, "%I", lua_tointeger(L, -2));
             const char *key = lua_tolstring(L, -1, &key_len);
             key_len = key_len < suffix_len ? key_len : suffix_len;
