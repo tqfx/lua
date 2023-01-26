@@ -12,7 +12,7 @@ static const char *str_suffix(const char *buffer, const char *sep) {
     return NULL;
 }
 
-static int char_is_id(int c) {
+static int char_is_luaid(int c) {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
 }
 
@@ -40,7 +40,7 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
             integer = lua_tointeger(L, -1);
             if (integer) {
                 lua_pushinteger(L, integer);
-                lua_remove(L, -2);
+                lua_remove(L, -2); // table, string, integer
             }
         }
         sep = result;
@@ -51,9 +51,14 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
                 completion_exec(cenv, buffer, suffix, sep);
             }
             if (lua_getmetatable(L, -1)) {
-                lua_remove(L, -2); // table, value, meta
                 lua_getfield(L, -1, "__index");
-                lua_remove(L, -2); // table, meta, __index
+                lua_remove(L, -2); // table, value, meta, __index
+                if (lua_type(L, -1) == LUA_TFUNCTION) {
+                    lua_pushvalue(L, -2);
+                    lua_pushstring(L, "__index");
+                    lua_call(L, 2, 1);
+                }
+                lua_remove(L, -2); // table, value, __index
                 if (lua_type(L, -1) == LUA_TTABLE) {
                     completion_exec(cenv, buffer, suffix, sep);
                 }
@@ -90,13 +95,13 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
             const char *key = lua_tolstring(L, -2, &key_len);
             key_len = key_len < suffix_len ? key_len : suffix_len;
             if (strncmp(suffix, key, key_len) == 0) {
-                if (!char_is_id(*key) && sep && *sep == '.') {
+                if (!char_is_luaid(*key) && sep && *sep == '.') {
                     if (strchr(key, '\'')) {
                         lua_pushfstring(L, "%s[\"%s\"", prefix, key);
                     } else {
                         lua_pushfstring(L, "%s[\'%s\'", prefix, key);
                     }
-                } else if (!char_is_id(*key) && sep && *sep == '[') {
+                } else if (!char_is_luaid(*key) && sep && *sep == '[') {
                     if (strchr(key, '\'') || sep[1] == '\"') {
                         lua_pushfstring(L, "%s[\"%s\"", prefix, key);
                     } else {
