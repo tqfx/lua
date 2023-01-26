@@ -87,14 +87,12 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
     }
 
     for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1)) {
-        size_t key_len;
         if (lua_type(L, -2) == LUA_TSTRING) {
             if (sep && *sep == ':' && lua_type(L, -1) != LUA_TFUNCTION) {
                 continue;
             }
-            const char *key = lua_tolstring(L, -2, &key_len);
-            key_len = key_len < suffix_len ? key_len : suffix_len;
-            if (strncmp(suffix, key, key_len) == 0) {
+            const char *key = lua_tostring(L, -2);
+            if (strncmp(key, suffix, suffix_len) == 0) {
                 if (!char_is_luaid(*key) && sep && *sep == '.') {
                     if (strchr(key, '\'')) {
                         lua_pushfstring(L, "%s[\"%s\"", prefix, key);
@@ -131,9 +129,8 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
             }
         } else if (lua_type(L, -2) == LUA_TNUMBER) {
             lua_pushfstring(L, "%I", lua_tointeger(L, -2));
-            const char *key = lua_tolstring(L, -1, &key_len);
-            key_len = key_len < suffix_len ? key_len : suffix_len;
-            if (strncmp(suffix, key, key_len) == 0) {
+            const char *key = lua_tostring(L, -1);
+            if (strncmp(key, suffix, suffix_len) == 0) {
                 lua_pushfstring(L, "%s[%s", prefix, key);
                 ic_add_completion_ex(cenv, lua_tostring(L, -1), key, NULL);
                 lua_pop(L, 1);
