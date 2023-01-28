@@ -170,7 +170,8 @@ char *compentry_func(const char *text, int state) {
     char *ret = NULL;
     lua_readline(L, 1);
     if (lua_rawlen(L, -1) > state) {
-        lua_geti(L, -1, state + 1);
+        lua_pushinteger(L, state + 1);
+        lua_gettable(L, -2);
         ret = strdup(lua_tostring(L, -1));
         lua_pop(L, 1);
     }

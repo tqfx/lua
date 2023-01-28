@@ -1,10 +1,10 @@
-#if defined(lua_c)
-
 #if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
 #define lua_rawsetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_insert(L, -2), lua_rawset(L, idx))
 #define lua_rawgetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_rawget(L, idx))
 #define lua_rawlen(L, i) lua_objlen(L, i)
 #endif /* LUA_VERSION_NUM */
+
+#if defined(lua_c)
 
 #if defined(LUA_ISOCLINE)
 #if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
