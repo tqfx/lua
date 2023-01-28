@@ -16,12 +16,6 @@ static int char_is_luaid(int c) {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
 }
 
-#if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
-#define lua_rawsetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_insert(L, -2), lua_rawset(L, idx))
-#define lua_rawgetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_rawget(L, idx))
-#define lua_rawlen(L, i) lua_objlen(L, i)
-#endif /* LUA_VERSION_NUM */
-
 static int lua_readline(lua_State *L, int ret) {
     if (ret) {
         lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)(intptr_t)lua_readline);
@@ -189,7 +183,7 @@ char **completion_func(const char *text, int start, int end) {
     return rl_completion_matches(text, compentry_func);
 }
 
-void lua_initreadline(lua_State *L) {
+void lua_initline(lua_State *L) {
     rl_L = L;
     rl_readline_name = "lua";
     rl_attempted_completion_function = completion_func;

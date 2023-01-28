@@ -262,7 +262,7 @@ static void loadhistory(const char *name) {
     }
 }
 
-void lua_initreadline(lua_State *L) {
+void lua_initline(lua_State *L) {
     ic_set_default_completer(completer, L);
     ic_set_default_highlighter(highlighter, L);
     ic_set_prompt_marker("", "");
