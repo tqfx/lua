@@ -1,6 +1,7 @@
 #include "lua.h"
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <readline/readline.h>
 
 static const char *str_suffix(const char *buffer, const char *sep) {
@@ -100,7 +101,8 @@ static void compentry_exec(const char *buffer, const char *suffix, const char *s
     lua_readline(L, 0);
     for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1)) {
         if (lua_type(L, -2) == LUA_TSTRING) {
-            if (sep && *sep == ':' && lua_type(L, -1) != LUA_TFUNCTION) {
+            int type = lua_type(L, -1);
+            if (sep && *sep == ':' && type != LUA_TFUNCTION) {
                 continue;
             }
             const char *key = lua_tostring(L, -2);
@@ -124,14 +126,14 @@ static void compentry_exec(const char *buffer, const char *suffix, const char *s
                     lua_pushfstring(L, "%s[\'%s\'", prefix, key);
                 } else if (sep && *sep) {
                     lua_pushlstring(L, sep, suffix - sep);
-                    if (lua_type(L, -2) == LUA_TFUNCTION) {
+                    if (type == LUA_TFUNCTION) {
                         lua_pushfstring(L, "%s%s%s(", prefix, lua_tostring(L, -1), key);
                     } else {
                         lua_pushfstring(L, "%s%s%s", prefix, lua_tostring(L, -1), key);
                     }
                     lua_remove(L, -2); // key, value, sep, replacement
                 } else {
-                    if (lua_type(L, -1) == LUA_TFUNCTION) {
+                    if (type == LUA_TFUNCTION) {
                         lua_pushfstring(L, "%s%s(", prefix, key);
                     } else {
                         lua_pushfstring(L, "%s%s", prefix, key);
@@ -145,7 +147,7 @@ static void compentry_exec(const char *buffer, const char *suffix, const char *s
             const char *key = lua_tostring(L, -1);
             if (strncmp(key, suffix, suffix_len) == 0) {
                 lua_readline(L, 1);
-                lua_pushfstring(L, "%s%c%s", prefix, sep, key);
+                lua_pushfstring(L, "%s[%s", prefix, key);
                 lua_rawseti(L, -2, lua_rawlen(L, -2) + 1);
                 lua_pop(L, 1);
             }
@@ -167,7 +169,7 @@ char *compentry_func(const char *text, int state) {
         compentry_exec(text, text, 0);
         lua_pop(L, 1);
     }
-    char *ret = NULL;
+    char *ret = rl_filename_completion_function(text, state);
     lua_readline(L, 1);
     if (lua_rawlen(L, -1) > state) {
         lua_pushinteger(L, state + 1);
@@ -180,7 +182,7 @@ char *compentry_func(const char *text, int state) {
 }
 
 char **completion_func(const char *text, int start, int end) {
-    rl_completion_suppress_append = 1;
+    rl_completion_append_character = 0;
     return rl_completion_matches(text, compentry_func);
 }
 
@@ -188,4 +190,5 @@ void lua_initline(lua_State *L) {
     rl_L = L;
     rl_readline_name = "lua";
     rl_attempted_completion_function = completion_func;
+    rl_basic_word_break_characters = " \t\n`@$><=;|&{(";
 }

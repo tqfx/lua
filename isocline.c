@@ -88,7 +88,8 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
 
     for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1)) {
         if (lua_type(L, -2) == LUA_TSTRING) {
-            if (sep && *sep == ':' && lua_type(L, -1) != LUA_TFUNCTION) {
+            int type = lua_type(L, -1);
+            if (sep && *sep == ':' && type != LUA_TFUNCTION) {
                 continue;
             }
             const char *key = lua_tostring(L, -2);
@@ -111,14 +112,14 @@ static void completion_exec(ic_completion_env_t *cenv, const char *buffer, const
                     lua_pushfstring(L, "%s[\'%s\'", prefix, key);
                 } else if (sep && *sep) {
                     lua_pushlstring(L, sep, suffix - sep);
-                    if (lua_type(L, -2) == LUA_TFUNCTION) {
+                    if (type == LUA_TFUNCTION) {
                         lua_pushfstring(L, "%s%s%s(", prefix, lua_tostring(L, -1), key);
                     } else {
                         lua_pushfstring(L, "%s%s%s", prefix, lua_tostring(L, -1), key);
                     }
                     lua_remove(L, -2); // key, value, sep, replacement
                 } else {
-                    if (lua_type(L, -1) == LUA_TFUNCTION) {
+                    if (type == LUA_TFUNCTION) {
                         lua_pushfstring(L, "%s%s(", prefix, key);
                     } else {
                         lua_pushfstring(L, "%s%s", prefix, key);
