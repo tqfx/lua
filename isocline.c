@@ -1,6 +1,5 @@
 #include "isocline/src/isocline.c"
 #include "lua.h"
-
 #include <ctype.h>
 
 static const char *str_suffix(const char *buffer, const char *sep) {
@@ -165,6 +164,51 @@ static void completer(ic_completion_env_t *cenv, const char *buffer) {
     }
 }
 
+static size_t is_number(void const *_str) {
+    char const *str = (char const *)_str;
+    if (str[0] == '0' && (str[1] == 'X' || str[1] == 'x')) {
+        str += 2;
+        for (; isxdigit(*str); ++str) {
+        }
+        if (*str == '.') {
+            ++str;
+        }
+        for (; isxdigit(*str); ++str) {
+        }
+        if (*str == 'P' || *str == 'p') {
+            ++str;
+            if (*str == '+' || *str == '-') {
+                ++str;
+            }
+            if (!isdigit(*str)) {
+                return 0;
+            }
+        }
+        for (; isdigit(*str); ++str) {
+        }
+    } else {
+        for (; isdigit(*str); ++str) {
+        }
+        if (*str == '.') {
+            ++str;
+        }
+        for (; isdigit(*str); ++str) {
+        }
+        if (*str == 'E' || *str == 'e') {
+            ++str;
+            if (*str == '+' || *str == '-') {
+                ++str;
+            }
+            if (!isdigit(*str)) {
+                return 0;
+            }
+        }
+        for (; isdigit(*str); ++str) {
+        }
+    }
+    return str - (char const *)_str;
+}
+
 static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) {
     static const char *keywords[] = {
         "and",
@@ -209,7 +253,7 @@ static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) 
         } else if ((tlen = ic_match_any_token(input, i, ic_char_is_idletter, types)) > 0) {
             ic_highlight(henv, i, tlen, "type");
             i += tlen;
-        } else if ((tlen = ic_is_token(input, i, ic_char_is_digit)) > 0) {
+        } else if ((tlen = is_number(input + i)) > 0) {
             ic_highlight(henv, i, tlen, "number");
             i += tlen;
         } else if (ic_starts_with(input + i, "--")) { // line comment
