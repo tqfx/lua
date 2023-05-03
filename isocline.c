@@ -164,49 +164,52 @@ static void completer(ic_completion_env_t *cenv, const char *buffer) {
     }
 }
 
-static size_t is_number(void const *_str) {
-    char const *str = (char const *)_str;
-    if (str[0] == '0' && (str[1] == 'X' || str[1] == 'x')) {
-        str += 2;
-        for (; isxdigit(*str); ++str) {
+static size_t is_number(void const *_s, size_t i) {
+    char const *s = (char const *)_s + i;
+    if (i && (isalnum(s[-1]) || s[-1] == '_')) {
+        return 0;
+    }
+    if (s[0] == '0' && (s[1] == 'X' || s[1] == 'x')) {
+        s += 2;
+        for (; isxdigit(*s); ++s) {
         }
-        if (*str == '.') {
-            ++str;
+        if (*s == '.') {
+            ++s;
         }
-        for (; isxdigit(*str); ++str) {
+        for (; isxdigit(*s); ++s) {
         }
-        if (*str == 'P' || *str == 'p') {
-            ++str;
-            if (*str == '+' || *str == '-') {
-                ++str;
+        if (*s == 'P' || *s == 'p') {
+            ++s;
+            if (*s == '+' || *s == '-') {
+                ++s;
             }
-            if (!isdigit(*str)) {
+            if (!isdigit(*s)) {
                 return 0;
             }
         }
-        for (; isdigit(*str); ++str) {
+        for (; isdigit(*s); ++s) {
         }
     } else {
-        for (; isdigit(*str); ++str) {
+        for (; isdigit(*s); ++s) {
         }
-        if (*str == '.') {
-            ++str;
+        if (*s == '.') {
+            ++s;
         }
-        for (; isdigit(*str); ++str) {
+        for (; isdigit(*s); ++s) {
         }
-        if (*str == 'E' || *str == 'e') {
-            ++str;
-            if (*str == '+' || *str == '-') {
-                ++str;
+        if (*s == 'E' || *s == 'e') {
+            ++s;
+            if (*s == '+' || *s == '-') {
+                ++s;
             }
-            if (!isdigit(*str)) {
+            if (!isdigit(*s)) {
                 return 0;
             }
         }
-        for (; isdigit(*str); ++str) {
+        for (; isdigit(*s); ++s) {
         }
     }
-    return str - (char const *)_str;
+    return s - (char const *)_s - i;
 }
 
 static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) {
@@ -253,19 +256,17 @@ static void highlighter(ic_highlight_env_t *henv, const char *input, void *arg) 
         } else if ((tlen = ic_match_any_token(input, i, ic_char_is_idletter, types)) > 0) {
             ic_highlight(henv, i, tlen, "type");
             i += tlen;
-        } else if ((tlen = is_number(input + i)) > 0) {
+        } else if ((tlen = is_number(input, i)) > 0) {
             ic_highlight(henv, i, tlen, "number");
             i += tlen;
         } else if (ic_starts_with(input + i, "--")) { // line comment
-            tlen = 2;
-            while (i + tlen < len && input[i + tlen] != '\n') {
-                tlen++;
+            for (tlen = 2; i + tlen < len && input[i + tlen] != '\n'; ++tlen) {
             }
             ic_highlight(henv, i, tlen, "comment");
             i += tlen;
         } else {
             ic_highlight(henv, i, 1, NULL);
-            i++;
+            ++i;
         }
     }
 }
