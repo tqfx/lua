@@ -7,7 +7,7 @@ A powerful, efficient, lightweight, embeddable scripting language.
 - LUA_32BITS:BOOL
 - LUA_APICHECK:BOOL
 - LUA_COMPAT:BOOL
-- LUA_LTO:BOOL
+- LUA_IPO:BOOL
 - LUA_PIE:BOOL
 - LUA_ISOCLINE:BOOL
 - LUA_READLINE:BOOL
