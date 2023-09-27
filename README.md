@@ -2,7 +2,7 @@
 
 A powerful, efficient, lightweight, embeddable scripting language.
 
-## option
+## Options
 
 - LUA_32BITS:BOOL
 - LUA_APICHECK:BOOL
@@ -14,7 +14,7 @@ A powerful, efficient, lightweight, embeddable scripting language.
 - LUA_USER_H:FILEPATH
 - LUA_VERSION:STRING
 
-## example
+## Example
 
 ```c
 /* lua.config.h */
@@ -30,7 +30,7 @@ A powerful, efficient, lightweight, embeddable scripting language.
 ```sh
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=install -DLUA_USER_H="lua.config.h"
+cmake .. -DCMAKE_INSTALL_PREFIX=. -DLUA_USER_H="lua.config.h"
 cmake --build . --target install
-install/bin/luac -v
+bin/luac -v
 ```
