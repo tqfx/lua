@@ -1,17 +1,15 @@
-#if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
-#define lua_rawsetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_insert(L, -2), lua_rawset(L, idx))
-#define lua_rawgetp(L, idx, p) (lua_pushlightuserdata(L, p), lua_rawget(L, idx))
-#define lua_rawlen(L, i) lua_objlen(L, i)
-#endif /* LUA_VERSION_NUM */
-
 #if defined(lua_c)
 
-#if defined(LUA_ISOCLINE)
+#if defined(LUA_ISOCLINE) || defined(LUA_READLINE)
 #if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
+#define lua_rawlen lua_objlen
 #undef lua_readline
 #undef lua_saveline
 #undef lua_freeline
 #endif /* LUA_VERSION_NUM */
+#endif /* LUA_ISOCLINE */
+
+#if defined(LUA_ISOCLINE)
 void lua_initline(lua_State *L);
 void ic_history_add(const char *entry);
 char *ic_readline(const char *prompt_text);
@@ -30,11 +28,6 @@ char *ic_readline(const char *prompt_text);
 #if defined(LUA_READLINE)
 #include <readline/readline.h>
 #include <readline/history.h>
-#if !defined LUA_VERSION_NUM || (LUA_VERSION_NUM <= 501)
-#undef lua_readline
-#undef lua_saveline
-#undef lua_freeline
-#endif /* LUA_VERSION_NUM */
 void lua_initline(lua_State *L);
 #define lua_initreadline(L) lua_initline(L)
 #define lua_readline(L, b, p) ((void)L, ((b) = readline(p)) != NULL)

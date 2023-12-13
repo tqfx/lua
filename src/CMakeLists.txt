@@ -286,7 +286,7 @@ file(GLOB PUBLIC_HEADER ${LUA_USER_H}
   luaconf.h src/luaconf.h
   lualib.h src/lualib.h include/lualib.h
 )
-install(FILES ${PUBLIC_HEADER} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${PUBLIC_HEADER} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lua${LUA_VERSION})
 install(TARGETS lualib liblua lua luac EXPORT ${PROJECT_NAME}-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -305,7 +305,7 @@ file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/lua${LUA_VERSION}.pc CONTENT
 "prefix=${CMAKE_INSTALL_PREFIX}
 exec_prefix=\${prefix}
 libdir=\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}
-includedir=\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}\n
+includedir=\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}/lua${LUA_VERSION}
 INSTALL_LMOD=\${prefix}/${CMAKE_INSTALL_DATADIR}/lua/${LUA_VERSION}
 INSTALL_CMOD=\${prefix}/${CMAKE_INSTALL_LIBDIR}/lua/${LUA_VERSION}\n
 Name: ${PROJECT_NAME}
@@ -325,7 +325,7 @@ include(CPack)
 
 if(EXISTS ${LUA_USER_H})
   get_filename_component(LUA_USER_H ${LUA_USER_H} NAME)
-  install(CODE "file(READ \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/lua.h\" text)
+  install(CODE "file(READ \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/lua${LUA_VERSION}/lua.h\" text)
   string(REGEX REPLACE \"/([^/]+)#if defined\\\\(LUA_USER_H\\\\)\" \"/\\\\1#include \\\"${LUA_USER_H}\\\"\\n#if defined(LUA_USER_H)\" text \"\${text}\")
-  file(WRITE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/lua.h\" \"\${text}\")")
+  file(WRITE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/lua${LUA_VERSION}/lua.h\" \"\${text}\")")
 endif()
