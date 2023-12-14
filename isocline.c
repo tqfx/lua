@@ -343,8 +343,8 @@ static void highlighter(ic_highlight_env_t *henv, char const *input, void *arg)
             ic_highlight(henv, i, tlen, "number");
             i += tlen;
         }
-        else if (ic_starts_with(input + i, "--"))
-        { // line comment
+        else if (ic_starts_with(input + i, "--")) // line comment
+        {
             for (tlen = 2; i + tlen < len && input[i + tlen] != '\n'; ++tlen)
             {
             }
