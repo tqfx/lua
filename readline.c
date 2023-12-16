@@ -202,7 +202,11 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
         }
         else if (lua_type(L, -2) == LUA_TNUMBER)
         {
+#if defined(LUA_VERSION_NUM) && (LUA_VERSION_NUM > 502)
             lua_pushfstring(L, "%I", lua_tointeger(L, -2));
+#else /* !LUA_VERSION_NUM */
+            lua_pushfstring(L, "%d", lua_tointeger(L, -2));
+#endif /* LUA_VERSION_NUM */
             char const *key = lua_tostring(L, -1);
             if (strncmp(key, suffix, suffix_len) == 0)
             {
