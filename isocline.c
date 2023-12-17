@@ -298,12 +298,12 @@ static void joinpath(void *buff, char const *path, char const *name)
     char *p = (char *)buff;
     for (; *path; ++path)
     {
-        *p++ = (*path != '\\' ? *path : '/');
+        *p++ = (char)(*path != '\\' ? *path : '/');
     }
     if (p > (char *)buff && p[-1] != '/') { *p++ = '/'; }
     for (; *name; ++name)
     {
-        *p++ = (*name != '\\' ? *name : '/');
+        *p++ = (char)(*name != '\\' ? *name : '/');
     }
     *p = 0;
 }
