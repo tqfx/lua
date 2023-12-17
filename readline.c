@@ -11,23 +11,6 @@
 #define lua_rawlen(L, i) lua_objlen(L, i)
 #endif /* LUA_VERSION_NUM */
 
-static char const *str_suffix(char const *buffer, char const *sep)
-{
-    for (; *buffer; ++buffer)
-    {
-        if (strchr(sep, *buffer))
-        {
-            return buffer;
-        }
-    }
-    return NULL;
-}
-
-static int char_is_luaid(int c)
-{
-    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
-}
-
 static int lua_readline(lua_State *L, int ret)
 {
     if (ret)
@@ -39,7 +22,20 @@ static int lua_readline(lua_State *L, int ret)
     return 0;
 }
 
+static char const *str_suffix(char const *buffer, char const *sep)
+{
+    for (; *buffer; ++buffer)
+    {
+        if (strchr(sep, *buffer)) { return buffer; }
+    }
+    return NULL;
+}
+
 static lua_State *rl_L = NULL;
+static int char_is_luaid(int c)
+{
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+}
 static void compentry_exec(char const *buffer, char const *suffix, char const *sep)
 {
     lua_State *L = rl_L;
