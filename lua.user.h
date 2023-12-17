@@ -11,8 +11,8 @@
 
 #if defined(LUA_ISOCLINE)
 void lua_initline(lua_State *L);
-void ic_history_add(const char *entry);
-char *ic_readline(const char *prompt_text);
+void ic_history_add(char const *entry);
+char *ic_readline(char const *prompt_text);
 #define lua_initreadline(L) lua_initline(L)
 #define lua_readline(L, b, p) (((b) = ic_readline(p)) != NULL)
 #if defined(LUA_VERSION_NUM) && (LUA_VERSION_NUM > 502)
