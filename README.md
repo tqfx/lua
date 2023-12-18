@@ -17,7 +17,7 @@ A powerful, efficient, lightweight, embeddable scripting language.
 ## Example
 
 ```c
-/* lua.config.h */
+/* lua.user.h */
 #if defined(LUA_RELEASE)
 #undef LUA_RELEASE
 #define LUA_RELEASE "Lua 6.6.6"
@@ -30,7 +30,7 @@ A powerful, efficient, lightweight, embeddable scripting language.
 ```sh
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=. -DLUA_USER_H="lua.config.h"
+cmake .. -DCMAKE_INSTALL_PREFIX=. -DLUA_USER_H="lua.user.h"
 cmake --build . --target install
 bin/luac -v
 ```
