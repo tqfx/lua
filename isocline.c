@@ -145,35 +145,24 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
             char const *key = lua_tostring(L, -2);
             if (strncmp(key, suffix, suffix_len) == 0)
             {
-                if (!is_id(*key) && sep && *sep == '.')
+                union
                 {
-                    if (strchr(key, '\''))
-                    {
-                        lua_pushfstring(L, "%s[\"%s\"", prefix, key);
-                    }
-                    else
-                    {
-                        lua_pushfstring(L, "%s[\'%s\'", prefix, key);
-                    }
-                }
-                else if (!is_id(*key) && sep && *sep == '[')
+                    char const *p;
+                    char *o;
+                } s;
+                if ((sep && *sep == '[') || (!is_id(*key) && sep && *sep))
                 {
-                    if (strchr(key, '\'') || sep[1] == '\"')
+                    lua_pushfstring(L, "%s%s", key, key);
+                    char const *k2 = lua_tostring(L, -1);
+                    char const *k1 = key;
+                    for (s.p = k2; *k1;)
                     {
-                        lua_pushfstring(L, "%s[\"%s\"", prefix, key);
+                        if (*k1 == '\"') { *s.o++ = '\\'; }
+                        *s.o++ = *k1++;
                     }
-                    else
-                    {
-                        lua_pushfstring(L, "%s[\'%s\'", prefix, key);
-                    }
-                }
-                else if (sep && *sep == '[' && sep[1] == '\"')
-                {
-                    lua_pushfstring(L, "%s[\"%s\"", prefix, key);
-                }
-                else if (sep && *sep == '[')
-                {
-                    lua_pushfstring(L, "%s[\'%s\'", prefix, key);
+                    *s.o = 0;
+                    lua_pushfstring(L, "%s[\"%s\"", prefix, k2);
+                    lua_remove(L, -2); // key, value, k2, replacement
                 }
                 else if (sep && *sep)
                 {
