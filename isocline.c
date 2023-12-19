@@ -99,7 +99,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
                     }
                     lua_pushvalue(L, -2);
                     lua_pushstring(L, "__index");
-                    lua_call(L, 2, 1);
+                    lua_pcall(L, 2, 1, 0);
                 }
                 lua_remove(L, -2); // table, value, __index
                 if (lua_type(L, -1) == LUA_TTABLE)

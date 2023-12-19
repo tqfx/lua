@@ -106,7 +106,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                     }
                     lua_pushvalue(L, -2);
                     lua_pushstring(L, "__index");
-                    lua_call(L, 2, 1);
+                    lua_pcall(L, 2, 1, 0);
                 }
                 lua_remove(L, -2); // table, value, __index
                 if (lua_type(L, -1) == LUA_TTABLE)
