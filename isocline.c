@@ -23,6 +23,15 @@ char *ic_readline(char const *prompt_text);
 #endif /* LUA_VERSION_NUM */
 #define lua_freeline(L, b) free(b)
 
+static int haschr(char const *str, int chr)
+{
+    for (; *str; ++str)
+    {
+        if (*str == chr) { return 1; }
+    }
+    return 0;
+}
+
 static int is_id(int c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
 static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char const *suffix, char const *sep)
 {
@@ -31,7 +40,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
     if (suffix == NULL) { suffix = buffer; }
     for (char const *p = suffix; *p; ++p)
     {
-        if (strchr(".:[", *p))
+        if (*p == '.' || *p == ':' || *p == '[')
         {
             result = p;
             break;
@@ -39,7 +48,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
     }
     if (result > suffix)
     {
-        size_t fix = 0;
+        unsigned int fix = 0;
         lua_Integer integer = 0;
         if (result[-1] == ']')
         {
@@ -54,7 +63,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
                 integer = 1;
             }
         }
-        lua_pushlstring(L, suffix, result - suffix - fix);
+        lua_pushlstring(L, suffix, (size_t)(result - suffix) - fix);
         if (integer)
         {
             integer = lua_tointeger(L, -1);
@@ -79,6 +88,15 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
                 lua_remove(L, -2); // table, value, meta, __index
                 if (lua_type(L, -1) == LUA_TFUNCTION)
                 {
+                    if (strncmp(suffix, "__index", sizeof("__index") - 1) == 0)
+                    {
+                        int c = (int)suffix[sizeof("__index") - 1];
+                        if (c == '.' || c == ':' || c == '[')
+                        {
+                            suffix += sizeof("__index");
+                            sep += sizeof("__index");
+                        }
+                    }
                     lua_pushvalue(L, -2);
                     lua_pushstring(L, "__index");
                     lua_call(L, 2, 1);
@@ -96,7 +114,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
 
     void *ud;
     lua_Alloc alloc = lua_getallocf(L, &ud);
-    size_t prefix_len = (sep ? sep : suffix) - buffer;
+    size_t prefix_len = (size_t)((sep ? sep : suffix) - buffer);
     char *prefix = (char *)alloc(ud, NULL, LUA_TSTRING, prefix_len + 1);
     memcpy(prefix, buffer, prefix_len);
     prefix[prefix_len] = 0;
@@ -106,13 +124,16 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
         ++suffix; // '1 "1
     }
     size_t suffix_len = strlen(suffix);
-    if (suffix_len && suffix[suffix_len - 1] == ']')
+    if (suffix_len)
     {
-        --suffix_len; // 1]
-    }
-    if (suffix_len && strchr("\'\"", suffix[suffix_len - 1]))
-    {
-        --suffix_len; // 1' 1"
+        if (suffix[suffix_len - 1] == ']')
+        {
+            --suffix_len; // 1]
+        }
+        if (suffix[suffix_len - 1] == '\'' || suffix[suffix_len - 1] == '\"')
+        {
+            --suffix_len; // 1' 1"
+        }
     }
 
     for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1))
@@ -156,7 +177,7 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
                 }
                 else if (sep && *sep)
                 {
-                    lua_pushlstring(L, sep, suffix - sep);
+                    lua_pushlstring(L, sep, (size_t)(suffix - sep));
                     if (type == LUA_TFUNCTION)
                     {
                         lua_pushfstring(L, "%s%s%s(", prefix, lua_tostring(L, -1), key);
@@ -217,7 +238,7 @@ static void completion_func(ic_completion_env_t *cenv, char const *buffer)
 
 static bool is_block(char const *s, long len)
 {
-    return len > 0 && (isalnum(*s) || strchr("_.:[\'\"\\]", *s));
+    return len > 0 && (isalnum(*s) || haschr("_.:[\'\"\\]", *s));
 }
 
 static void completer(ic_completion_env_t *cenv, char const *buffer)
@@ -229,7 +250,7 @@ static void completer(ic_completion_env_t *cenv, char const *buffer)
     }
 }
 
-static size_t is_number(void const *_s, size_t i)
+static long is_number(void const *_s, long i)
 {
     char const *s = (char const *)_s + i;
     if (i && (isalnum(s[-1]) || s[-1] == '_')) { return 0; }
@@ -260,7 +281,7 @@ static size_t is_number(void const *_s, size_t i)
         }
         for (; isdigit(*s); ++s) {}
     }
-    return s - (char const *)_s - i;
+    return (long)(s - (char const *)_s - i);
 }
 
 static void highlighter(ic_highlight_env_t *henv, char const *input, void *arg)

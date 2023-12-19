@@ -47,7 +47,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
     if (suffix == NULL) { suffix = buffer; }
     for (char const *p = suffix; *p; ++p)
     {
-        if (strchr(".:[", *p))
+        if (*p == '.' || *p == ':' || *p == '[')
         {
             result = p;
             break;
@@ -55,7 +55,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
     }
     if (result > suffix)
     {
-        size_t fix = 0;
+        unsigned int fix = 0;
         lua_Integer integer = 0;
         if (result[-1] == ']')
         {
@@ -70,7 +70,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 integer = 1;
             }
         }
-        lua_pushlstring(L, suffix, result - suffix - fix);
+        lua_pushlstring(L, suffix, (size_t)(result - suffix) - fix);
         if (integer)
         {
             integer = lua_tointeger(L, -1);
@@ -95,6 +95,15 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 lua_remove(L, -2); // table, value, meta, __index
                 if (lua_type(L, -1) == LUA_TFUNCTION)
                 {
+                    if (strncmp(suffix, "__index", sizeof("__index") - 1) == 0)
+                    {
+                        int c = (int)suffix[sizeof("__index") - 1];
+                        if (c == '.' || c == ':' || c == '[')
+                        {
+                            suffix += sizeof("__index");
+                            sep += sizeof("__index");
+                        }
+                    }
                     lua_pushvalue(L, -2);
                     lua_pushstring(L, "__index");
                     lua_call(L, 2, 1);
@@ -112,7 +121,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
 
     void *ud;
     lua_Alloc alloc = lua_getallocf(L, &ud);
-    size_t prefix_len = (sep ? sep : suffix) - buffer;
+    size_t prefix_len = (size_t)((sep ? sep : suffix) - buffer);
     char *prefix = (char *)alloc(ud, NULL, LUA_TSTRING, prefix_len + 1);
     memcpy(prefix, buffer, prefix_len);
     prefix[prefix_len] = 0;
@@ -122,13 +131,16 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
         ++suffix; // '1 "1
     }
     size_t suffix_len = strlen(suffix);
-    if (suffix_len && suffix[suffix_len - 1] == ']')
+    if (suffix_len)
     {
-        --suffix_len; // 1]
-    }
-    if (suffix_len && strchr("\'\"", suffix[suffix_len - 1]))
-    {
-        --suffix_len; // 1' 1"
+        if (suffix[suffix_len - 1] == ']')
+        {
+            --suffix_len; // 1]
+        }
+        if (suffix[suffix_len - 1] == '\'' || suffix[suffix_len - 1] == '\"')
+        {
+            --suffix_len; // 1' 1"
+        }
     }
 
     lua_createtable(L, 0, 0);
@@ -175,7 +187,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 }
                 else if (sep && *sep)
                 {
-                    lua_pushlstring(L, sep, suffix - sep);
+                    lua_pushlstring(L, sep, (size_t)(suffix - sep));
                     if (type == LUA_TFUNCTION)
                     {
                         lua_pushfstring(L, "%s%s%s(", prefix, lua_tostring(L, -1), key);
@@ -236,17 +248,17 @@ static char *compentry_func(char const *text, int state)
         compentry_exec(text, text, 0);
         lua_pop(L, 1);
     }
-    char *ret = rl_filename_completion_function(text, state);
+    char *str = rl_filename_completion_function(text, state);
     lua_readline_(L, 1);
     if (lua_rawlen(L, -1) > (size_t)state)
     {
         lua_pushinteger(L, state + 1);
         lua_gettable(L, -2);
-        ret = strdup(lua_tostring(L, -1));
+        str = strdup(lua_tostring(L, -1));
         lua_pop(L, 1);
     }
     lua_pop(L, 1);
-    return ret;
+    return str;
 }
 
 static char **completion_func(char const *text, int start, int end)
