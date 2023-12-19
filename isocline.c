@@ -216,11 +216,11 @@ static void completion_exec(ic_completion_env_t *cenv, char const *buffer, char 
 static void completion_func(ic_completion_env_t *cenv, char const *buffer)
 {
     lua_State *L = ic_completion_arg(cenv);
-#if defined(LUA_RIDX_LAST)
-    lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_LAST);
-#else /* !LUA_RIDX_LAST */
+#if defined(LUA_RIDX_GLOBALS)
+    lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+#else /* !LUA_RIDX_GLOBALS */
     lua_pushvalue(L, LUA_GLOBALSINDEX);
-#endif /* LUA_RIDX_LAST */
+#endif /* LUA_RIDX_GLOBALS */
     completion_exec(cenv, buffer, buffer, 0);
     lua_pop(L, 1);
 }

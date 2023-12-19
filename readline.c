@@ -229,11 +229,11 @@ static char *compentry_func(char const *text, int state)
     lua_State *L = rl_readline_L;
     if (state == 0)
     {
-#if defined(LUA_RIDX_LAST)
-        lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_LAST);
-#else /* !LUA_RIDX_LAST */
+#if defined(LUA_RIDX_GLOBALS)
+        lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+#else /* !LUA_RIDX_GLOBALS */
         lua_pushvalue(L, LUA_GLOBALSINDEX);
-#endif /* LUA_RIDX_LAST */
+#endif /* LUA_RIDX_GLOBALS */
         compentry_exec(text, text, 0);
         lua_pop(L, 1);
     }
