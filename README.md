@@ -1,6 +1,7 @@
 # Lua
 
 A powerful, efficient, lightweight, embeddable scripting language.
+![ ](https://github.com/tqfx/lua/releases/download/assets/screenshot.gif)
 
 ## Options
 
