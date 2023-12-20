@@ -26,7 +26,7 @@
         add_history(lua_tostring(L, idx));
 #endif /* LUA_VERSION_NUM */
 #define lua_freeline(L, b) free(b)
-
+static lua_State *rl_readline_L = NULL;
 static int lua_readline_(lua_State *L, int ret)
 {
     if (ret)
@@ -37,9 +37,14 @@ static int lua_readline_(lua_State *L, int ret)
     lua_rawsetp(L, LUA_REGISTRYINDEX, (void *)(intptr_t)lua_readline_);
     return 0;
 }
-
-static lua_State *rl_readline_L = NULL;
-static int is_id(int c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
+static int is_id(char const *str)
+{
+    for (int c = *str; c; ++str, c = (int)*str)
+    {
+        if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '_') { return 0; }
+    }
+    return 1;
+}
 static void compentry_exec(char const *buffer, char const *suffix, char const *sep)
 {
     char const *result = NULL;
@@ -70,7 +75,9 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 integer = 1;
             }
         }
-        lua_pushlstring(L, suffix, (size_t)(result - suffix) - fix);
+        size_t key_len = (size_t)(result - suffix);
+        if (key_len >= fix) { key_len -= fix; }
+        lua_pushlstring(L, suffix, key_len);
         if (integer)
         {
             integer = lua_tointeger(L, -1);
@@ -160,7 +167,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                     char *o;
                 } s;
                 lua_readline_(L, 1);
-                if ((sep && *sep == '[') || (!is_id(*key) && sep && *sep))
+                if ((sep && *sep == '[') || (!is_id(key) && sep && *sep))
                 {
                     lua_pushfstring(L, "%s%s", key, key);
                     char const *k2 = lua_tostring(L, -1);
