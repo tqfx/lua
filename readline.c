@@ -39,9 +39,11 @@ static int lua_readline_(lua_State *L, int ret)
 }
 static int is_id(char const *str)
 {
-    for (int c = *str; c; ++str, c = (int)*str)
+    int c = (int)*str;
+    if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '_') { return 0; }
+    for (++str, c = (int)*str; c; ++str, c = (int)*str)
     {
-        if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '_') { return 0; }
+        if ((c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '_') { return 0; }
     }
     return 1;
 }
