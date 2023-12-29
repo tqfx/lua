@@ -26,17 +26,12 @@
         add_history(lua_tostring(L, idx));
 #endif /* LUA_VERSION_NUM */
 #define lua_freeline(L, b) free(b)
+static char const *keywords[] = {
+    "and", "break", "do", "else", "elseif", "end",
+    "false", "for", "function", "goto", "if", "in",
+    "local", "nil", "not", "or", "repeat", "return",
+    "then", "true", "until", "while", NULL};
 static lua_State *rl_readline_L = NULL;
-static int lua_readline_(lua_State *L, int ret)
-{
-    if (ret)
-    {
-        lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)(intptr_t)lua_readline_);
-        return 1;
-    }
-    lua_rawsetp(L, LUA_REGISTRYINDEX, (void *)(intptr_t)lua_readline_);
-    return 0;
-}
 static int is_id(char const *str)
 {
     int c = (int)*str;
@@ -49,22 +44,22 @@ static int is_id(char const *str)
 }
 static void compentry_exec(char const *buffer, char const *suffix, char const *sep)
 {
-    char const *result = NULL;
+    char const *subfix = NULL;
     lua_State *L = rl_readline_L;
     if (suffix == NULL) { suffix = buffer; }
-    for (char const *p = suffix; *p; ++p)
+    for (char const *s = suffix; *s; ++s)
     {
-        if (*p == '.' || *p == ':' || *p == '[')
+        if (*s == '.' || *s == ':' || *s == '[')
         {
-            result = p;
+            subfix = s;
             break;
         }
     }
-    if (result > suffix)
+    if (subfix > suffix)
     {
         unsigned int fix = 0;
         lua_Integer integer = 0;
-        if (result[-1] == ']')
+        if (subfix[-1] == ']')
         {
             ++fix; // 1]
             if (*suffix == '\'' || *suffix == '\"')
@@ -77,7 +72,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 integer = 1;
             }
         }
-        size_t key_len = (size_t)(result - suffix);
+        size_t key_len = (size_t)(subfix - suffix);
         if (key_len >= fix) { key_len -= fix; }
         lua_pushlstring(L, suffix, key_len);
         if (integer)
@@ -89,8 +84,8 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                 lua_remove(L, -2); // table, string, integer
             }
         }
-        sep = result;
-        suffix = result + 1;
+        sep = subfix;
+        suffix = subfix + 1;
         lua_gettable(L, -2); // table, key
         if (*suffix != '.' && *suffix != ':' && *suffix != '[')
         {
@@ -153,7 +148,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
     }
 
     lua_createtable(L, 0, 0);
-    lua_readline_(L, 0);
+    lua_rawsetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
     for (lua_pushnil(L); lua_next(L, -2); lua_pop(L, 1))
     {
         if (lua_type(L, -2) == LUA_TSTRING)
@@ -168,7 +163,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
                     char const *p;
                     char *o;
                 } s;
-                lua_readline_(L, 1);
+                lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
                 if ((sep && *sep == '[') || (!is_id(key) && sep && *sep))
                 {
                     lua_pushfstring(L, "%s%s", key, key);
@@ -221,7 +216,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
             char const *key = lua_tostring(L, -1);
             if (strncmp(key, suffix, suffix_len) == 0)
             {
-                lua_readline_(L, 1);
+                lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
                 lua_pushfstring(L, "%s[%s", prefix, key);
                 lua_rawseti(L, -2, lua_rawlen(L, -2) + 1);
                 lua_pop(L, 1);
@@ -230,7 +225,21 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
         }
     }
 
-    prefix = (char *)alloc(ud, prefix, prefix_len + 1, 0);
+    if (!sep)
+    {
+        lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
+        for (char const **s = keywords; *s; ++s)
+        {
+            if (strncmp(*s, suffix, suffix_len) == 0)
+            {
+                lua_pushstring(L, *s);
+                lua_rawseti(L, -2, lua_rawlen(L, -2) + 1);
+            }
+        }
+        lua_pop(L, 1);
+    }
+
+    alloc(ud, prefix, prefix_len + 1, 0);
 }
 
 static char *compentry_func(char const *text, int state)
@@ -247,7 +256,7 @@ static char *compentry_func(char const *text, int state)
         lua_pop(L, 1);
     }
     char *str = rl_filename_completion_function(text, state);
-    lua_readline_(L, 1);
+    lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
     if (lua_rawlen(L, -1) > (size_t)state)
     {
         lua_pushinteger(L, state + 1);
