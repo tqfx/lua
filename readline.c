@@ -42,6 +42,30 @@ static int is_id(char const *str)
     }
     return 1;
 }
+static int search(char const *str, char const *sub, size_t len)
+{
+    char const *s0 = str;
+    if (*str && *sub && *str != *sub) { return 0; }
+    for (size_t s1 = 0; *s0 && s1 < len; ++s1)
+    {
+        if (*s0 != sub[s1])
+        {
+            for (++s0;; ++s0)
+            {
+                if (*s0 == 0) { return 0; }
+                if (*s0 == sub[s1])
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            ++s0;
+        }
+    }
+    return 1;
+}
 static void compentry_exec(char const *buffer, char const *suffix, char const *sep)
 {
     char const *subfix = NULL;
@@ -156,7 +180,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
             int type = lua_type(L, -1);
             if (sep && *sep == ':' && type != LUA_TFUNCTION) { continue; }
             char const *key = lua_tostring(L, -2);
-            if (strncmp(key, suffix, suffix_len) == 0)
+            if (search(key, suffix, suffix_len))
             {
                 union
                 {
@@ -214,7 +238,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
             lua_pushfstring(L, "%d", lua_tointeger(L, -2));
 #endif /* LUA_VERSION_NUM */
             char const *key = lua_tostring(L, -1);
-            if (strncmp(key, suffix, suffix_len) == 0)
+            if (search(key, suffix, suffix_len))
             {
                 lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
                 lua_pushfstring(L, "%s[%s", prefix, key);
@@ -230,7 +254,7 @@ static void compentry_exec(char const *buffer, char const *suffix, char const *s
         lua_rawgetp(L, LUA_REGISTRYINDEX, (void *)&rl_readline_L);
         for (char const **s = keywords; *s; ++s)
         {
-            if (strncmp(*s, suffix, suffix_len) == 0)
+            if (search(*s, suffix, suffix_len))
             {
                 lua_pushstring(L, *s);
                 lua_rawseti(L, -2, lua_rawlen(L, -2) + 1);
